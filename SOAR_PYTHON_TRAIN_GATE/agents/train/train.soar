@@ -1,0 +1,91 @@
+
+sp {train*init
+    (state <s> ^superstate nil)
+-->
+    (<s> ^position far ^train-count 0)
+}
+
+# ── Proposals ─────────────────────────────────────────────────────────────────
+
+# Clock: count < 6, keep ticking
+sp {train*propose*clock
+    (state <s> ^train-count { <c> < 6 })
+-->
+    (<s> ^operator <o> +)
+    (<o> ^name clock)
+}
+
+# Transition far→near: count reached 6
+sp {train*propose*approach
+    (state <s> ^position far ^train-count 6)
+-->
+    (<s> ^operator <o> +)
+    (<o> ^name approach)
+}
+
+# Transition near→in: count reached 6
+sp {train*propose*enter
+    (state <s> ^position near ^train-count 6)
+-->
+    (<s> ^operator <o> +)
+    (<o> ^name enter)
+}
+
+# Transition in→far: count reached 6
+sp {train*propose*exit
+    (state <s> ^position in ^train-count 6)
+-->
+    (<s> ^operator <o> +)
+    (<o> ^name exit)
+}
+
+# ── Output-link cleanup ───────────────────────────────────────────────────────
+
+sp {train*clear*output
+    (state <s> ^operator <o> ^io.output-link <out>)
+    (<out> ^<attr> <val>)
+-->
+    (<out> ^<attr> <val> -)
+}
+
+# ── Apply rules ───────────────────────────────────────────────────────────────
+
+sp {train*apply*clock
+    (state <s> ^operator <o> ^train-count <c>)
+    (<o> ^name clock)
+-->
+    (<s> ^train-count <c> -)
+    (<s> ^train-count (+ <c> 1))
+}
+
+sp {train*apply*approach
+    (state <s> ^operator <o> ^position far ^train-count 6 ^io.output-link <out>)
+    (<o> ^name approach)
+-->
+    (<s> ^position far -)
+    (<s> ^position near +)
+    (<s> ^train-count 6 -)
+    (<s> ^train-count 0 +)
+    (<out> ^signal approach)
+}
+
+sp {train*apply*enter
+    (state <s> ^operator <o> ^position near ^train-count 6)
+    (<o> ^name enter)
+-->
+    (<s> ^position near -)
+    (<s> ^position in +)
+    (<s> ^train-count 6 -)
+    (<s> ^train-count 0 +)
+}
+
+sp {train*apply*exit
+    (state <s> ^operator <o> ^position in ^train-count 6 ^io.output-link <out>)
+    (<o> ^name exit)
+-->
+    (<s> ^position in -)
+    (<s> ^position far +)
+    (<s> ^train-count 6 -)
+    (<s> ^train-count 0 +)
+    (<out> ^signal exit)
+}

@@ -1,0 +1,96 @@
+
+sp {gate*init
+    (state <s> ^superstate nil)
+-->
+    (<s> ^gate-position up)
+}
+
+# ── Proposals ─────────────────────────────────────────────────────────────────
+
+# Receive lower command → up to lowering  (PRISM: lower_g)
+sp {gate*propose*recv-lower
+    (state <s> ^gate-position up ^io.input-link <in>)
+    (<in> ^command lower)
+-->
+    (<s> ^operator <o> +)
+    (<o> ^name recv-lower)
+}
+
+# Receive raise command → down to raising  (PRISM: raise_g)
+sp {gate*propose*recv-raise
+    (state <s> ^gate-position down ^io.input-link <in>)
+    (<in> ^command raise)
+-->
+    (<s> ^operator <o> +)
+    (<o> ^name recv-raise)
+}
+
+# Clock: count < 2, keep ticking  (PRISM: clk_gate invariant)
+sp {gate*propose*clock
+    (state <s> ^gate-count { <c> < 2 })
+-->
+    (<s> ^operator <o> +)
+    (<o> ^name clock)
+}
+
+# Lowering complete → lowering to down  (PRISM: lowered)
+sp {gate*propose*lowered
+    (state <s> ^gate-position lowering ^gate-count 2)
+-->
+    (<s> ^operator <o> +)
+    (<o> ^name lowered)
+}
+
+# Raising complete → raising to up  (PRISM: raised)
+sp {gate*propose*raised
+    (state <s> ^gate-position raising ^gate-count 2)
+-->
+    (<s> ^operator <o> +)
+    (<o> ^name raised)
+}
+
+# ── Apply rules ───────────────────────────────────────────────────────────────
+
+sp {gate*apply*recv-lower
+    (state <s> ^operator <o> ^gate-position up)
+    (<o> ^name recv-lower)
+-->
+    (<s> ^gate-position up -)
+    (<s> ^gate-position lowering +)
+    (<s> ^gate-count 0)
+}
+
+sp {gate*apply*recv-raise
+    (state <s> ^operator <o> ^gate-position down)
+    (<o> ^name recv-raise)
+-->
+    (<s> ^gate-position down -)
+    (<s> ^gate-position raising +)
+    (<s> ^gate-count 0)
+}
+
+sp {gate*apply*clock
+    (state <s> ^operator <o> ^gate-count <c>)
+    (<o> ^name clock)
+-->
+    (<s> ^gate-count <c> - )
+    (<s> ^gate-count (+ <c> 1))
+}
+
+sp {gate*apply*lowered
+    (state <s> ^operator <o> ^gate-position lowering ^gate-count 2)
+    (<o> ^name lowered)
+-->
+    (<s> ^gate-position lowering -)
+    (<s> ^gate-position down +)
+    (<s> ^gate-count 2 -)
+}
+
+sp {gate*apply*raised
+    (state <s> ^operator <o> ^gate-position raising ^gate-count 2)
+    (<o> ^name raised)
+-->
+    (<s> ^gate-position raising -)
+    (<s> ^gate-position up +)
+    (<s> ^gate-count 2 -)
+}

@@ -1,0 +1,87 @@
+
+sp {controller*init
+    (state <s> ^superstate nil)
+-->
+    (<s> ^ctrl-state 0)
+}
+
+# ── Proposals ─────────────────────────────────────────────────────────────────
+
+# Receive approach signal from train → 0 to 1
+sp {controller*propose*approach
+    (state <s> ^ctrl-state 0 ^io.input-link <in>)
+    (<in> ^signal approach)
+-->
+    (<s> ^operator <o> +)
+    (<o> ^name approach)
+}
+
+# Immediately lower gate → 1 to 2
+sp {controller*propose*lower
+    (state <s> ^ctrl-state 1 )
+-->
+    (<s> ^operator <o> +)
+    (<o> ^name lower)
+}
+
+# Receive exit signal from train → 2 to 3
+sp {controller*propose*exit
+    (state <s> ^ctrl-state 2 ^io.input-link <in>)
+    (<in> ^signal exit)
+-->
+    (<s> ^operator <o> +)
+    (<o> ^name exit)
+}
+
+# Immediately raise gate → 3 to 0
+sp {controller*propose*raise
+    (state <s> ^ctrl-state 3)
+-->
+    (<s> ^operator <o> +)
+    (<o> ^name raise)
+}
+
+# ── Output-link cleanup ───────────────────────────────────────────────────────
+
+sp {controller*clear*output
+    (state <s> ^operator <o> ^io.output-link <out>)
+    (<out> ^<attr> <val>)
+-->
+    (<out> ^<attr> <val> -)
+}
+
+# ── Apply rules ───────────────────────────────────────────────────────────────
+
+sp {controller*apply*approach
+    (state <s> ^operator <o> ^ctrl-state 0)
+    (<o> ^name approach)
+-->
+    (<s> ^ctrl-state 0 -)
+    (<s> ^ctrl-state 1 +)
+}
+
+sp {controller*apply*lower
+    (state <s> ^operator <o> ^ctrl-state 1 ^io.output-link <out>)
+    (<o> ^name lower)
+-->
+    (<s> ^ctrl-state 1 -)
+    (<s> ^ctrl-state 2 +)
+    (<out> ^command lower)
+}
+
+sp {controller*apply*exit
+    (state <s> ^operator <o> ^ctrl-state 2)
+    (<o> ^name exit)
+-->
+    (<s> ^ctrl-state 2 -)
+    (<s> ^ctrl-state 3 +)
+}
+
+sp {controller*apply*raise
+    (state <s> ^operator <o> ^ctrl-state 3 ^io.output-link <out>)
+    (<o> ^name raise)
+-->
+    (<s> ^ctrl-state 3 -)
+    (<s> ^ctrl-state 0 +)
+    (<out> ^command raise)
+}
